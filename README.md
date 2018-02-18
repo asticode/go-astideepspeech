@@ -3,24 +3,19 @@
 
 Golang bindings for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepSpeech) speech-to-text library.
 
-As of now, `astideepspeech` is only compatible with version `v0.1.0` of `DeepSpeech`.
+As of now, `astideepspeech` is only compatible with version `v0.1.1` of `DeepSpeech`.
 
 # Installation
 ## Install DeepSpeech
 
-- get the code by following instructions in DeepSpeech's ["Getting the code"](https://github.com/mozilla/DeepSpeech/blob/v0.1.0/README.md#getting-the-code) chapter
+- get the code by following instructions in DeepSpeech's ["Getting the code"](https://github.com/mozilla/DeepSpeech/blob/v0.1.1/README.md#getting-the-code) chapter
 - `cd` into the directory you've just cloned the project into
 - run the following commands:
 
-        $ git checkout v0.1.0
+        $ git checkout v0.1.1
         $ sudo mkdir /usr/local/include/DeepSpeech
         $ sudo cp native_client/*.h /usr/local/include/DeepSpeech
-        
-- download pre-built components by following instructions in DeepSpeech's native client ["Installation"](https://github.com/mozilla/DeepSpeech/tree/v0.1.0/native_client#installation) chapter
-- `cd` into the directory you've just downloaded components into
-- run the following command:
-
-        $ sudo cp *.so /usr/local/lib
+        $ sudo cp native_client/build/*.so /usr/local/lib
         
 - make sure `/usr/local/lib` is in your `LD_LIBRARY_PATH` environment variable
 
@@ -37,16 +32,16 @@ Run the following commands:
 
     $ mkdir /tmp/deepspeech
     $ cd /tmp/deepspeech
-    $ wget https://github.com/mozilla/DeepSpeech/releases/download/v0.1.0/deepspeech-0.1.0-models.tar.gz
-    $ tar xvfz deepspeech-0.1.0-models.tar.gz
+    $ wget https://github.com/mozilla/DeepSpeech/releases/download/v0.1.1/deepspeech-0.1.1-models.tar.gz
+    $ tar xvfz deepspeech-0.1.1-models.tar.gz
     
 ## Get the audio files
 
 Run the following commands:
 
     $ cd /tmp/deepspeech
-    $ wget https://github.com/mozilla/DeepSpeech/releases/download/v0.1.0/audio-0.1.0.tar.gz
-    $ tar xvfz audio-0.1.0.tar.gz
+    $ wget https://github.com/mozilla/DeepSpeech/releases/download/v0.1.1/audio-0.1.1.tar.gz
+    $ tar xvfz audio-0.1.1.tar.gz
     
 ## Use the client
 
