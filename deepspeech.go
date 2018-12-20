@@ -1,8 +1,8 @@
 package astideepspeech
 
 /*
-#cgo LDFLAGS: -ldeepspeech -ldeepspeech_utils -ltensorflow_cc -ltensorflow_framework
-#include "deepspeech.h"
+#cgo LDFLAGS: -ldeepspeech
+#include "deepspeech_wrap.h"
 */
 import "C"
 import "unsafe"
@@ -47,10 +47,9 @@ func (m *Model) Close() error {
 // lmPath 	        The path to the language model binary file.
 // triePath 	        The path to the trie file build from the same vocabulary as the language model binary.
 // lmWeight 	        The weight to give to language model results when scoring.
-// wordCountWeight      The weight (penalty) to give to beams when increasing the word count of the decoding.
 // validWordCountWeight The weight (bonus) to give to beams when adding a new valid word to the decoding.
-func (m *Model) EnableDecoderWithLM(alphabetConfigPath, lmPath, triePath string, lmWeight, wordCountWeight, validWordCountWeight float64) {
-	C.EnableDecoderWithLM(m.w, C.CString(alphabetConfigPath), C.CString(lmPath), C.CString(triePath), C.float(lmWeight), C.float(wordCountWeight), C.float(validWordCountWeight))
+func (m *Model) EnableDecoderWithLM(alphabetConfigPath, lmPath, triePath string, lmWeight, validWordCountWeight float64) {
+	C.EnableDecoderWithLM(m.w, C.CString(alphabetConfigPath), C.CString(lmPath), C.CString(triePath), C.float(lmWeight), C.float(validWordCountWeight))
 }
 
 // sliceHeader represents a slice header

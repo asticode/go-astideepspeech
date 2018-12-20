@@ -18,7 +18,6 @@ const (
 	nCep                 = 26
 	nContext             = 9
 	lmWeight             = 1.75
-	wordCountWeight      = 1.00
 	validWordCountWeight = 1.00
 )
 
@@ -45,7 +44,7 @@ func main() {
 	m := astideepspeech.New(os.Args[1], nCep, nContext, os.Args[3], beamWidth)
 	defer m.Close()
 	if len(os.Args) > 5 {
-		m.EnableDecoderWithLM(os.Args[3], os.Args[4], os.Args[5], lmWeight, wordCountWeight, validWordCountWeight)
+		m.EnableDecoderWithLM(os.Args[3], os.Args[4], os.Args[5], lmWeight, validWordCountWeight)
 	}
 
 	// Stat audio

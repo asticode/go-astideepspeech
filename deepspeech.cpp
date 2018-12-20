@@ -1,22 +1,30 @@
 #include <stdio.h>
-#include <DeepSpeech/deepspeech.h>
+#include <deepspeech.h>
 
 extern "C" {
     class ModelWrapper {
         private:
-            DeepSpeech::Model* model;
+            ModelState* model;
+
         public:
             ModelWrapper(const char* aModelPath, int aNCep, int aNContext, const char* aAlphabetConfigPath, int aBeamWidth)
             {
-                model = new DeepSpeech::Model(aModelPath, aNCep, aNContext, aAlphabetConfigPath, aBeamWidth);
+                DS_CreateModel(aModelPath, aNCep, aNContext, aAlphabetConfigPath, aBeamWidth, &model);
             }
-            void enableDecoderWithLM(const char* aAlphabetConfigPath, const char* aLMPath, const char* aTriePath, float aLMWeight, float aWordCountWeight, float aValidWordCountWeight)
+
+            ~ModelWrapper()
             {
-                model->enableDecoderWithLM(aAlphabetConfigPath, aLMPath, aTriePath, aLMWeight, aWordCountWeight, aValidWordCountWeight);
+                DS_DestroyModel(model);
             }
+
+            void enableDecoderWithLM(const char* aAlphabetConfigPath, const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight)
+            {
+                DS_EnableDecoderWithLM(model, aAlphabetConfigPath, aLMPath, aTriePath, aLMWeight, aValidWordCountWeight);
+            }
+
             char* stt(const short* aBuffer, unsigned int aBufferSize, int aSampleRate)
             {
-                return model->stt(aBuffer, aBufferSize, aSampleRate);
+                return DS_SpeechToText(model, aBuffer, aBufferSize, aSampleRate);
             }
     };
 
@@ -28,9 +36,9 @@ extern "C" {
     {
         delete w;
     }
-    void EnableDecoderWithLM(ModelWrapper* w, const char* aAlphabetConfigPath, const char* aLMPath, const char* aTriePath, float aLMWeight, float aWordCountWeight, float aValidWordCountWeight)
+    void EnableDecoderWithLM(ModelWrapper* w, const char* aAlphabetConfigPath, const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight)
     {
-        w->enableDecoderWithLM(aAlphabetConfigPath, aLMPath, aTriePath, aLMWeight, aWordCountWeight, aValidWordCountWeight);
+        w->enableDecoderWithLM(aAlphabetConfigPath, aLMPath, aTriePath, aLMWeight, aValidWordCountWeight);
     }
     char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, int aSampleRate)
     {
