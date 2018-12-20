@@ -64,8 +64,34 @@ type sliceHeader struct {
 // bufferSize The number of samples in the audio signal.
 // sampleRate The sample-rate of the audio signal.
 // TODO Make sure the C string is cleaned properly
-func (m *Model) SpeechToText(buffer []int16, bufferSize, sampleRate int) string {
-	return C.GoString(C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.int(sampleRate)))
+func (m *Model) SpeechToText(buffer []int16, bufferSize, sampleRate uint) string {
+	return C.GoString(C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(sampleRate)))
+}
+
+type Stream struct {
+        sw	*C.StreamWrapper
+}
+
+func SetupStream(mw *Model, preAllocFrames uint, sampleRate uint) *Stream {
+	return &Stream{
+		sw:	C.SetupStream(mw.w, C.uint(preAllocFrames), C.uint(sampleRate)),
+	}
+}
+
+func (s *Stream) FeedAudioContent(buffer []int16, bufferSize uint) {
+	C.FeedAudioContent(s.sw, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize))
+}
+
+func (s *Stream) IntermediateDecode() string {
+	return C.GoString(C.IntermediateDecode(s.sw))
+}
+
+func (s *Stream) FinishStream() string {
+	return C.GoString(C.FinishStream(s.sw))
+}
+
+func (s *Stream) DiscardStream() {
+        C.DiscardStream(s.sw);
 }
 
 func PrintVersions() {

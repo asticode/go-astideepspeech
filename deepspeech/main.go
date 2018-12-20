@@ -87,5 +87,5 @@ func main() {
 	}
 
 	// Speech to text
-	astilog.Infof("Text: %s", m.SpeechToText(d, len(d), 16000))
+	astilog.Infof("Text: %s", m.SpeechToText(d, uint(len(d)), 16000))
 }
