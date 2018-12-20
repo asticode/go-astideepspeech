@@ -67,3 +67,7 @@ type sliceHeader struct {
 func (m *Model) SpeechToText(buffer []int16, bufferSize, sampleRate int) string {
 	return C.GoString(C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.int(sampleRate)))
 }
+
+func PrintVersions() {
+        C.PrintVersions()
+}

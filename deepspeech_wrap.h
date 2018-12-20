@@ -7,6 +7,7 @@ extern "C" {
     void Close(ModelWrapper* w);
     void EnableDecoderWithLM(ModelWrapper* w, const char* aAlphabetConfigPath, const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight);
     char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, int aSampleRate);
+    void PrintVersions();
 
 #ifdef __cplusplus
 }

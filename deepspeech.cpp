@@ -36,12 +36,19 @@ extern "C" {
     {
         delete w;
     }
+
     void EnableDecoderWithLM(ModelWrapper* w, const char* aAlphabetConfigPath, const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight)
     {
         w->enableDecoderWithLM(aAlphabetConfigPath, aLMPath, aTriePath, aLMWeight, aValidWordCountWeight);
     }
+
     char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, int aSampleRate)
     {
         return w->stt(aBuffer, aBufferSize, aSampleRate);
+    }
+
+    void PrintVersions()
+    {
+        DS_PrintVersions();
     }
 }
