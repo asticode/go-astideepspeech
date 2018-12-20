@@ -17,47 +17,52 @@ const (
 	beamWidth            = 500
 	nCep                 = 26
 	nContext             = 9
-	lmWeight             = 1.75
-	wordCountWeight      = 1.00
-	validWordCountWeight = 1.00
+	lmWeight             = 1.50
+	validWordCountWeight = 2.10
 )
 
+var model    = flag.String("model", "",    "Path to the model (protocol buffer binary file)")
+var alphabet = flag.String("alphabet", "", "Path to the configuration file specifying the alphabet used by the network")
+var audio    = flag.String("audio", "",    "Path to the audio file to run (WAV format)")
+var lm       = flag.String("lm", "",       "Path to the language model binary file")
+var trie     = flag.String("trie", "",     "Path to the language model trie file created with native_client/generate_trie")
+var version  = flag.Bool("version", false, "Print version and exits")
+
 func main() {
-	// Parse flags
-	flag.Usage = func() {
-		fmt.Fprintln(os.Stdout, `Usage: deepspeech MODEL_PATH AUDIO_PATH ALPHABET_PATH [LM_PATH] [TRIE_PATH]
-  MODEL_PATH:          Path to the model (protocol buffer binary file)
-  AUDIO_PATH:          Path to the audio file to run (must be a .wav file)"
-  ALPHABET_PATH:       Path to the configuration file specifying the alphabet used by the network."
-  LM_PATH(Optional):   Path to the language model binary file.
-  TRIE_PATH(Optional): Path to the language model trie file created with native_client/generate_trie.`)
-	}
 	flag.Parse()
+
 	astilog.FlagInit()
 
-	// Invalid number of args
-	if len(os.Args) < 4 || len(os.Args) > 7 {
-		flag.Usage()
+	if *version {
+		astideepspeech.PrintVersions()
+                return
+	}
+
+	if *model == "" || *alphabet == "" || *audio == "" {
+		// In case of error print error and print usage
+		// This can also be done by passing -h or --help flags
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
 		return
 	}
 
 	// Initialize DeepSpeech
-	m := astideepspeech.New(os.Args[1], nCep, nContext, os.Args[3], beamWidth)
+	m := astideepspeech.New(*model, nCep, nContext, *alphabet, beamWidth)
 	defer m.Close()
-	if len(os.Args) > 5 {
-		m.EnableDecoderWithLM(os.Args[3], os.Args[4], os.Args[5], lmWeight, wordCountWeight, validWordCountWeight)
+	if *lm != "" {
+		m.EnableDecoderWithLM(*alphabet, *lm, *trie, lmWeight, validWordCountWeight)
 	}
 
 	// Stat audio
-	i, err := os.Stat(os.Args[2])
+	i, err := os.Stat(*audio)
 	if err != nil {
-		astilog.Fatal(errors.Wrapf(err, "stating %s failed", os.Args[2]))
+		astilog.Fatal(errors.Wrapf(err, "stating %s failed", *audio))
 	}
 
 	// Open audio
-	f, err := os.Open(os.Args[2])
+	f, err := os.Open(*audio)
 	if err != nil {
-		astilog.Fatal(errors.Wrapf(err, "opening %s failed", os.Args[2]))
+		astilog.Fatal(errors.Wrapf(err, "opening %s failed", audio))
 	}
 
 	// Create reader
@@ -82,5 +87,5 @@ func main() {
 	}
 
 	// Speech to text
-	astilog.Infof("Text: %s", m.SpeechToText(d, len(d), 16000))
+	astilog.Infof("Text: %s", m.SpeechToText(d, uint(len(d)), 16000))
 }
