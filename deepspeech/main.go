@@ -17,8 +17,8 @@ const (
 	beamWidth            = 500
 	nCep                 = 26
 	nContext             = 9
-	lmWeight             = 1.50
-	validWordCountWeight = 2.10
+	lmWeight             = 0.75
+	validWordCountWeight = 1.85
 )
 
 var model    = flag.String("model", "",    "Path to the model (protocol buffer binary file)")
