@@ -13,6 +13,7 @@ As of now, `astideepspeech` is only compatible with version `v0.4.0` of `DeepSpe
 - extract/copy both to /tmp/ds/
 - export CGO_LDFLAGS="-L/tmp/ds/"
 - export CGO_CXXFLAGS="-I/tmp/ds/"
+- export LD_LIBRARY_PATH=/tmp/ds/:$LD_LIBRARY_PATH
 
 ## Install astideepspeech
 
@@ -43,14 +44,14 @@ Run the following commands:
 Run the following commands (make sure `$GOPATH/bin` is in your `$PATH`):
 
     $ cd /tmp/deepspeech
-    $ deepspeech models/output_graph.pb audio/2830-3980-0043.wav models/alphabet.txt models/lm.binary models/trie
+    $ deepspeech -model models/output_graph.pb -audio audio/2830-3980-0043.wav -alphabet models/alphabet.txt -lm models/lm.binary -trie models/trie
     
         Text: experience proves this
     
-    $ deepspeech models/output_graph.pb audio/4507-16021-0012.wav models/alphabet.txt models/lm.binary models/trie
+    $ deepspeech -model models/output_graph.pb -audio audio/4507-16021-0012.wav -alphabet models/alphabet.txt -lm models/lm.binary -trie models/trie
     
         Text: why should one halt on the way
         
-    $ deepspeech models/output_graph.pb audio/8455-210777-0068.wav models/alphabet.txt models/lm.binary models/trie
+    $ deepspeech -model models/output_graph.pb -audio audio/8455-210777-0068.wav -alphabet models/alphabet.txt -lm models/lm.binary -trie models/trie
     
         Text: your power is sufficient i said
