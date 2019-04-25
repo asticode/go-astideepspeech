@@ -15,6 +15,7 @@ extern "C" {
     char* IntermediateDecode(StreamWrapper* sw);
     char* FinishStream(StreamWrapper* sw);
 
+    void FreeString(char* s);
     void PrintVersions();
 
 #ifdef __cplusplus
