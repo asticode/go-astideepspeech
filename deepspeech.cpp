@@ -112,6 +112,11 @@ extern "C" {
         return sw->finishStream();
     }
 
+    void FreeString(char* s)
+    {
+	DS_FreeString(s);
+    }
+
     void PrintVersions()
     {
         DS_PrintVersions();

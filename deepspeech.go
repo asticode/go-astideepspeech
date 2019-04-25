@@ -63,9 +63,11 @@ type sliceHeader struct {
 // buffer     A 16-bit, mono raw audio signal at the appropriate sample rate.
 // bufferSize The number of samples in the audio signal.
 // sampleRate The sample-rate of the audio signal.
-// TODO Make sure the C string is cleaned properly
 func (m *Model) SpeechToText(buffer []int16, bufferSize, sampleRate uint) string {
-	return C.GoString(C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(sampleRate)))
+	str := C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(sampleRate));
+	retval := C.GoString(str)
+	C.FreeString(str)
+	return retval
 }
 
 // Stream represent a streaming state
@@ -105,7 +107,10 @@ func (s *Stream) IntermediateDecode() string {
 // FinishStream Signal the end of an audio signal to an ongoing streaming
 // inference, returns the STT result over the whole audio signal.
 func (s *Stream) FinishStream() string {
-	return C.GoString(C.FinishStream(s.sw))
+	str := C.FinishStream(s.sw)
+	retval := C.GoString(str)
+	C.FreeString(str)
+	return retval
 }
 
 // Destroy a streaming state without decoding the computed logits. This
