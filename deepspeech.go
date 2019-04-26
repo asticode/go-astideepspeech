@@ -64,10 +64,55 @@ type sliceHeader struct {
 // bufferSize The number of samples in the audio signal.
 // sampleRate The sample-rate of the audio signal.
 func (m *Model) SpeechToText(buffer []int16, bufferSize, sampleRate uint) string {
-	str := C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(sampleRate));
+	str := C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(sampleRate))
+	defer C.FreeString(str)
 	retval := C.GoString(str)
-	C.FreeString(str)
 	return retval
+}
+
+type MetadataItem C.struct_MetadataItem
+
+func (mi *MetadataItem) Character() string {
+	return C.GoString(C.MetadataItem_GetCharacter((*C.MetadataItem)(unsafe.Pointer(mi))))
+}
+
+func (mi *MetadataItem) Timestep() int {
+	return int(C.MetadataItem_GetTimestep((*C.MetadataItem)(unsafe.Pointer(mi))))
+}
+
+func (mi *MetadataItem) StartTime() float32 {
+	return float32(C.MetadataItem_GetStartTime((*C.MetadataItem)(unsafe.Pointer(mi))))
+}
+
+// Metadata represents a DeepSpeech metadata output
+type Metadata C.struct_Metadata
+
+func (m *Metadata) NumItems() int32 {
+	return int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
+}
+
+func (m *Metadata) Probability() float64 {
+	return float64(C.Metadata_GetProbability((*C.Metadata)(unsafe.Pointer(m))))
+}
+
+func (m *Metadata) Items() []MetadataItem {
+	num_items := int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
+	allItems := C.Metadata_GetItems((*C.Metadata)(unsafe.Pointer(m)))
+	return (*[1 << 30]MetadataItem)(unsafe.Pointer(allItems))[:num_items:num_items]
+}
+
+// Close frees the Metadata structure properly
+func (m *Metadata) Close() error {
+	C.FreeMetadata((*C.Metadata)(unsafe.Pointer(m)))
+	return nil
+}
+
+// SpeechToTextWithMetadata uses the DeepSpeech model to perform Speech-To-Text.
+// buffer     A 16-bit, mono raw audio signal at the appropriate sample rate.
+// bufferSize The number of samples in the audio signal.
+// sampleRate The sample-rate of the audio signal.
+func (m *Model) SpeechToTextWithMetadata(buffer []int16, bufferSize, sampleRate uint) *Metadata {
+	return (*Metadata)(unsafe.Pointer(C.STTWithMetadata(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(sampleRate))))
 }
 
 // Stream represent a streaming state
@@ -108,9 +153,15 @@ func (s *Stream) IntermediateDecode() string {
 // inference, returns the STT result over the whole audio signal.
 func (s *Stream) FinishStream() string {
 	str := C.FinishStream(s.sw)
+	defer C.FreeString(str)
 	retval := C.GoString(str)
-	C.FreeString(str)
 	return retval
+}
+
+// FinishStreamWithMetadata Signal the end of an audio signal to an ongoing streaming
+// inference, returns extended metadata.
+func (s *Stream) FinishStreamWithMetadata() *Metadata {
+	return (*Metadata)(unsafe.Pointer(C.FinishStreamWithMetadata(s.sw)))
 }
 
 // Destroy a streaming state without decoding the computed logits. This

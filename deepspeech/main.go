@@ -27,6 +27,15 @@ var audio    = flag.String("audio", "",    "Path to the audio file to run (WAV f
 var lm       = flag.String("lm", "",       "Path to the language model binary file")
 var trie     = flag.String("trie", "",     "Path to the language model trie file created with native_client/generate_trie")
 var version  = flag.Bool("version", false, "Print version and exits")
+var extended = flag.Bool("extended", false, "Use extended metadata")
+
+func metadataToString(m *astideepspeech.Metadata) string {
+	retval := ""
+	for _, item := range m.Items() {
+		retval += item.Character()
+	}
+	return retval
+}
 
 func main() {
 	flag.Parse()
@@ -86,6 +95,15 @@ func main() {
 		d = append(d, int16(s))
 	}
 
+	output := ""
 	// Speech to text
-	astilog.Infof("Text: %s", m.SpeechToText(d, uint(len(d)), 16000))
+	if *extended {
+		metadata := m.SpeechToTextWithMetadata(d, uint(len(d)), 16000)
+		defer metadata.Close()
+		output = metadataToString(metadata)
+	} else {
+		output = m.SpeechToText(d, uint(len(d)), 16000)
+	}
+
+	astilog.Infof("Text: %s", output)
 }

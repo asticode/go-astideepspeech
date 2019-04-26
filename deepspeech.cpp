@@ -27,6 +27,11 @@ extern "C" {
                 return DS_SpeechToText(model, aBuffer, aBufferSize, aSampleRate);
             }
 
+            Metadata* sttWithMetadata(const short* aBuffer, unsigned int aBufferSize, unsigned int aSampleRate)
+            {
+                return DS_SpeechToTextWithMetadata(model, aBuffer, aBufferSize, aSampleRate);
+            }
+
             ModelState* getModel()
             {
                 return model;
@@ -50,6 +55,41 @@ extern "C" {
     char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, int aSampleRate)
     {
         return w->stt(aBuffer, aBufferSize, aSampleRate);
+    }
+
+    Metadata* STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, int aSampleRate)
+    {
+        return w->sttWithMetadata(aBuffer, aBufferSize, aSampleRate);
+    }
+
+    double Metadata_GetProbability(Metadata* m)
+    {
+        return m->probability;
+    }
+
+    int Metadata_GetNumItems(Metadata* m)
+    {
+        return m->num_items;
+    }
+
+    MetadataItem* Metadata_GetItems(Metadata* m)
+    {
+        return m->items;
+    }
+
+    char* MetadataItem_GetCharacter(MetadataItem* mi)
+    {
+        return mi->character;
+    }
+
+    int MetadataItem_GetTimestep(MetadataItem* mi)
+    {
+        return mi->timestep;
+    }
+
+    float MetadataItem_GetStartTime(MetadataItem* mi)
+    {
+        return mi->start_time;
     }
 
     class StreamWrapper {
@@ -82,6 +122,11 @@ extern "C" {
                 return DS_FinishStream(s);
             }
 
+            Metadata* finishStreamWithMetadata()
+            {
+                return DS_FinishStreamWithMetadata(s);
+            }
+
             void discardStream()
             {
                 DS_DiscardStream(s);
@@ -112,9 +157,19 @@ extern "C" {
         return sw->finishStream();
     }
 
+    Metadata* FinishStreamWithMetadata(StreamWrapper* sw)
+    {
+        return sw->finishStreamWithMetadata();
+    }
+
     void FreeString(char* s)
     {
-	DS_FreeString(s);
+        DS_FreeString(s);
+    }
+
+    void FreeMetadata(Metadata* m)
+    {
+        DS_FreeMetadata(m);
     }
 
     void PrintVersions()
