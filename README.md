@@ -8,12 +8,13 @@ As of now, `astideepspeech` is only compatible with version `v0.5.1` of `DeepSpe
 # Installation
 ## Install DeepSpeech
 
-- fetch an uptodate `native_client.tar.xz` matching your system, from DeepSpeech's ["releases"](https://github.com/mozilla/DeepSpeech/releases/tag/v0.5.1)
+- fetch an up-to-date `native_client.<your system>.tar.xz` matching your system from DeepSpeech's ["releases"](https://github.com/mozilla/DeepSpeech/releases/tag/v0.5.1)
+- extract its content to /tmp/deepspeech/lib
 - download `deepspeech.h` from https://github.com/mozilla/DeepSpeech/raw/v0.5.1/native_client/deepspeech.h
-- extract/copy both to /tmp/ds/
-- export CGO_LDFLAGS="-L/tmp/ds/"
-- export CGO_CXXFLAGS="-I/tmp/ds/"
-- export LD_LIBRARY_PATH=/tmp/ds/:$LD_LIBRARY_PATH
+- copy it to /tmp/deepspeech/include
+- export CGO_LDFLAGS="-L/tmp/ds/lib/"
+- export CGO_CXXFLAGS="-I/tmp/ds/include/"
+- export LD_LIBRARY_PATH=/tmp/ds/lib/:$LD_LIBRARY_PATH
 
 ## Install astideepspeech
 
