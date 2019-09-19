@@ -7,29 +7,34 @@ extern "C" {
             ModelState* model;
 
         public:
-            ModelWrapper(const char* aModelPath, int aNCep, int aNContext, const char* aAlphabetConfigPath, int aBeamWidth)
+            ModelWrapper(const char* aModelPath, int aBeamWidth)
             {
-                DS_CreateModel(aModelPath, aNCep, aNContext, aAlphabetConfigPath, aBeamWidth, &model);
+                DS_CreateModel(aModelPath, aBeamWidth, &model);
             }
 
             ~ModelWrapper()
             {
-                DS_DestroyModel(model);
+                DS_FreeModel(model);
             }
 
-            void enableDecoderWithLM(const char* aAlphabetConfigPath, const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight)
+            void enableDecoderWithLM(const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight)
             {
-                DS_EnableDecoderWithLM(model, aAlphabetConfigPath, aLMPath, aTriePath, aLMWeight, aValidWordCountWeight);
+                DS_EnableDecoderWithLM(model, aLMPath, aTriePath, aLMWeight, aValidWordCountWeight);
             }
 
-            char* stt(const short* aBuffer, unsigned int aBufferSize, unsigned int aSampleRate)
+	    int getModelSampleRate()
+	    {
+		return DS_GetModelSampleRate(model);
+	    }
+
+            char* stt(const short* aBuffer, unsigned int aBufferSize)
             {
-                return DS_SpeechToText(model, aBuffer, aBufferSize, aSampleRate);
+                return DS_SpeechToText(model, aBuffer, aBufferSize);
             }
 
-            Metadata* sttWithMetadata(const short* aBuffer, unsigned int aBufferSize, unsigned int aSampleRate)
+            Metadata* sttWithMetadata(const short* aBuffer, unsigned int aBufferSize)
             {
-                return DS_SpeechToTextWithMetadata(model, aBuffer, aBufferSize, aSampleRate);
+                return DS_SpeechToTextWithMetadata(model, aBuffer, aBufferSize);
             }
 
             ModelState* getModel()
@@ -38,33 +43,38 @@ extern "C" {
             }
     };
 
-    ModelWrapper* New(const char* aModelPath, int aNCep, int aNContext, const char* aAlphabetConfigPath, int aBeamWidth)
+    ModelWrapper* New(const char* aModelPath, int aBeamWidth)
     {
-        return new ModelWrapper(aModelPath, aNCep, aNContext, aAlphabetConfigPath, aBeamWidth);
+        return new ModelWrapper(aModelPath, aBeamWidth);
     }
     void Close(ModelWrapper* w)
     {
         delete w;
     }
 
-    void EnableDecoderWithLM(ModelWrapper* w, const char* aAlphabetConfigPath, const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight)
+    void EnableDecoderWithLM(ModelWrapper* w, const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight)
     {
-        w->enableDecoderWithLM(aAlphabetConfigPath, aLMPath, aTriePath, aLMWeight, aValidWordCountWeight);
+        w->enableDecoderWithLM(aLMPath, aTriePath, aLMWeight, aValidWordCountWeight);
     }
 
-    char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, int aSampleRate)
+    int GetModelSampleRate(ModelWrapper* w)
     {
-        return w->stt(aBuffer, aBufferSize, aSampleRate);
+	return w->getModelSampleRate();
     }
 
-    Metadata* STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, int aSampleRate)
+    char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize)
     {
-        return w->sttWithMetadata(aBuffer, aBufferSize, aSampleRate);
+        return w->stt(aBuffer, aBufferSize);
     }
 
-    double Metadata_GetProbability(Metadata* m)
+    Metadata* STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize)
     {
-        return m->probability;
+        return w->sttWithMetadata(aBuffer, aBufferSize);
+    }
+
+    double Metadata_GetConfidence(Metadata* m)
+    {
+        return m->confidence;
     }
 
     int Metadata_GetNumItems(Metadata* m)
@@ -97,14 +107,14 @@ extern "C" {
             StreamingState* s;
 
         public:
-            StreamWrapper(ModelWrapper* w, unsigned int aPreAllocFrames, unsigned int aSampleRate)
+            StreamWrapper(ModelWrapper* w)
             {
-                DS_SetupStream(w->getModel(), aPreAllocFrames, aSampleRate, &s);
+                DS_CreateStream(w->getModel(), &s);
             }
 
             ~StreamWrapper()
             {
-                DS_DiscardStream(s);
+                DS_FreeStream(s);
             }
 
             void feedAudioContent(const short* aBuffer, unsigned int aBufferSize)
@@ -127,17 +137,17 @@ extern "C" {
                 return DS_FinishStreamWithMetadata(s);
             }
 
-            void discardStream()
+            void freeStream()
             {
-                DS_DiscardStream(s);
+                DS_FreeStream(s);
             }
     };
 
-    StreamWrapper* SetupStream(ModelWrapper* mw, unsigned int aPreAllocFrames, unsigned int aSampleRate)
+    StreamWrapper* CreateStream(ModelWrapper* mw, unsigned int aPreAllocFrames)
     {
-        return new StreamWrapper(mw, aPreAllocFrames, aSampleRate);
+        return new StreamWrapper(mw);
     }
-    void DiscardStream(StreamWrapper* sw)
+    void FreeStream(StreamWrapper* sw)
     {
         delete sw;
     }
