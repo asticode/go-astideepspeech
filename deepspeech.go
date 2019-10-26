@@ -96,9 +96,9 @@ func (m *Metadata) Probability() float64 {
 }
 
 func (m *Metadata) Items() []MetadataItem {
-	num_items := int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
+	numItems := int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
 	allItems := C.Metadata_GetItems((*C.Metadata)(unsafe.Pointer(m)))
-	return (*[1 << 30]MetadataItem)(unsafe.Pointer(allItems))[:num_items:num_items]
+	return (*[1 << 30]MetadataItem)(unsafe.Pointer(allItems))[:numItems:numItems]
 }
 
 // Close frees the Metadata structure properly
@@ -163,8 +163,8 @@ func (s *Stream) FinishStreamWithMetadata() *Metadata {
 	return (*Metadata)(unsafe.Pointer(C.FinishStreamWithMetadata(s.sw)))
 }
 
-// Destroy a streaming state without decoding the computed logits. This
-// can be used if you no longer need the result of an ongoing streaming
+// DiscardStream Destroy a streaming state without decoding the computed logits.
+// This can be used if you no longer need the result of an ongoing streaming
 // inference and don't want to perform a costly decode operation.
 func (s *Stream) DiscardStream() {
 	C.DiscardStream(s.sw)
