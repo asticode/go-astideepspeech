@@ -12,9 +12,9 @@ As of now, `astideepspeech` is only compatible with version `v0.5.1` of `DeepSpe
 - extract its content to /tmp/deepspeech/lib
 - download `deepspeech.h` from https://github.com/mozilla/DeepSpeech/raw/v0.5.1/native_client/deepspeech.h
 - copy it to /tmp/deepspeech/include
-- export CGO_LDFLAGS="-L/tmp/ds/lib/"
-- export CGO_CXXFLAGS="-I/tmp/ds/include/"
-- export LD_LIBRARY_PATH=/tmp/ds/lib/:$LD_LIBRARY_PATH
+- export CGO_LDFLAGS="-L/tmp/deepspeech/lib/"
+- export CGO_CXXFLAGS="-I/tmp/deepspeech/include/"
+- export LD_LIBRARY_PATH=/tmp/deepspeech/lib/:$LD_LIBRARY_PATH
 
 ## Install astideepspeech
 

@@ -96,9 +96,9 @@ func (m *Metadata) Probability() float64 {
 }
 
 func (m *Metadata) Items() []MetadataItem {
-	num_items := int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
+	numItems := int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
 	allItems := C.Metadata_GetItems((*C.Metadata)(unsafe.Pointer(m)))
-	return (*[1 << 30]MetadataItem)(unsafe.Pointer(allItems))[:num_items:num_items]
+	return (*[1 << 30]MetadataItem)(unsafe.Pointer(allItems))[:numItems:numItems]
 }
 
 // Close frees the Metadata structure properly
@@ -117,7 +117,7 @@ func (m *Model) SpeechToTextWithMetadata(buffer []int16, bufferSize, sampleRate 
 
 // Stream represent a streaming state
 type Stream struct {
-        sw	*C.StreamWrapper
+	sw *C.StreamWrapper
 }
 
 // SetupStream creates a new audio stream
@@ -129,10 +129,9 @@ type Stream struct {
 // aSampleRate      The sample-rate of the audio signal.
 func SetupStream(mw *Model, preAllocFrames uint, sampleRate uint) *Stream {
 	return &Stream{
-		sw:	C.SetupStream(mw.w, C.uint(preAllocFrames), C.uint(sampleRate)),
+		sw: C.SetupStream(mw.w, C.uint(preAllocFrames), C.uint(sampleRate)),
 	}
 }
-
 
 // FeedAudioContent Feed audio samples to an ongoing streaming inference.
 // aBuffer      An array of 16-bit, mono raw audio samples at the  appropriate sample rate.
@@ -164,14 +163,14 @@ func (s *Stream) FinishStreamWithMetadata() *Metadata {
 	return (*Metadata)(unsafe.Pointer(C.FinishStreamWithMetadata(s.sw)))
 }
 
-// Destroy a streaming state without decoding the computed logits. This
-// can be used if you no longer need the result of an ongoing streaming
+// DiscardStream Destroy a streaming state without decoding the computed logits.
+// This can be used if you no longer need the result of an ongoing streaming
 // inference and don't want to perform a costly decode operation.
 func (s *Stream) DiscardStream() {
-        C.DiscardStream(s.sw);
+	C.DiscardStream(s.sw)
 }
 
 // PrintVersions Print version of this library and of the linked TensorFlow library.
 func PrintVersions() {
-        C.PrintVersions()
+	C.PrintVersions()
 }
