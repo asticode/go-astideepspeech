@@ -15,14 +15,11 @@ import (
 // Constants
 const (
 	beamWidth            = 500
-	nCep                 = 26
-	nContext             = 9
 	lmWeight             = 0.75
 	validWordCountWeight = 1.85
 )
 
 var model = flag.String("model", "", "Path to the model (protocol buffer binary file)")
-var alphabet = flag.String("alphabet", "", "Path to the configuration file specifying the alphabet used by the network")
 var audio = flag.String("audio", "", "Path to the audio file to run (WAV format)")
 var lm = flag.String("lm", "", "Path to the language model binary file")
 var trie = flag.String("trie", "", "Path to the language model trie file created with native_client/generate_trie")
@@ -47,7 +44,7 @@ func main() {
 		return
 	}
 
-	if *model == "" || *alphabet == "" || *audio == "" {
+	if *model == "" || *audio == "" {
 		// In case of error print error and print usage
 		// This can also be done by passing -h or --help flags
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
@@ -56,10 +53,10 @@ func main() {
 	}
 
 	// Initialize DeepSpeech
-	m := astideepspeech.New(*model, nCep, nContext, *alphabet, beamWidth)
+	m := astideepspeech.New(*model, beamWidth)
 	defer m.Close()
 	if *lm != "" {
-		m.EnableDecoderWithLM(*alphabet, *lm, *trie, lmWeight, validWordCountWeight)
+		m.EnableDecoderWithLM(*lm, *trie, lmWeight, validWordCountWeight)
 	}
 
 	// Stat audio
@@ -98,11 +95,11 @@ func main() {
 	output := ""
 	// Speech to text
 	if *extended {
-		metadata := m.SpeechToTextWithMetadata(d, uint(len(d)), 16000)
+		metadata := m.SpeechToTextWithMetadata(d, uint(len(d)))
 		defer metadata.Close()
 		output = metadataToString(metadata)
 	} else {
-		output = m.SpeechToText(d, uint(len(d)), 16000)
+		output = m.SpeechToText(d, uint(len(d)))
 	}
 
 	astilog.Infof("Text: %s", output)

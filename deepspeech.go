@@ -9,29 +9,20 @@ import "unsafe"
 
 // Model represents a DeepSpeech model
 type Model struct {
-	alphabetConfigPath string
 	beamWidth          int
 	modelPath          string
-	nCep               int
-	nContext           int
 	w                  *C.ModelWrapper
 }
 
 // New creates a new Model
 //
 // modelPath          The path to the frozen model graph.
-// nCep               The number of cepstrum the model was trained with.
-// nContext           The context window the model was trained with.
-// alphabetConfigPath The path to the configuration file specifying the alphabet used by the network.
 // beamWidth          The beam width used by the decoder. A larger beam width generates better results at the cost of decoding time.
-func New(modelPath string, nCep, nContext int, alphabetConfigPath string, beamWidth int) *Model {
+func New(modelPath string, beamWidth int) *Model {
 	return &Model{
-		alphabetConfigPath: alphabetConfigPath,
 		beamWidth:          beamWidth,
 		modelPath:          modelPath,
-		nCep:               nCep,
-		nContext:           nContext,
-		w:                  C.New(C.CString(modelPath), C.int(nCep), C.int(nContext), C.CString(alphabetConfigPath), C.int(beamWidth)),
+		w:                  C.New(C.CString(modelPath), C.int(beamWidth)),
 	}
 }
 
@@ -43,13 +34,17 @@ func (m *Model) Close() error {
 
 // EnableDecoderWithLM enables decoding using beam scoring with a KenLM language model.
 //
-// alphabetConfigPath   The path to the configuration file specifying the alphabet used by the network.
 // lmPath 	        The path to the language model binary file.
 // triePath 	        The path to the trie file build from the same vocabulary as the language model binary.
 // lmWeight 	        The weight to give to language model results when scoring.
 // validWordCountWeight The weight (bonus) to give to beams when adding a new valid word to the decoding.
-func (m *Model) EnableDecoderWithLM(alphabetConfigPath, lmPath, triePath string, lmWeight, validWordCountWeight float64) {
-	C.EnableDecoderWithLM(m.w, C.CString(alphabetConfigPath), C.CString(lmPath), C.CString(triePath), C.float(lmWeight), C.float(validWordCountWeight))
+func (m *Model) EnableDecoderWithLM(lmPath, triePath string, lmWeight, validWordCountWeight float64) {
+	C.EnableDecoderWithLM(m.w, C.CString(lmPath), C.CString(triePath), C.float(lmWeight), C.float(validWordCountWeight))
+}
+
+// GetModelSampleRate read the sample rate that was used to produce the model file.
+func (m *Model) GetModelSampleRate() int {
+	return int(C.GetModelSampleRate(m.w))
 }
 
 // sliceHeader represents a slice header
@@ -62,9 +57,8 @@ type sliceHeader struct {
 // SpeechToText uses the DeepSpeech model to perform Speech-To-Text.
 // buffer     A 16-bit, mono raw audio signal at the appropriate sample rate.
 // bufferSize The number of samples in the audio signal.
-// sampleRate The sample-rate of the audio signal.
-func (m *Model) SpeechToText(buffer []int16, bufferSize, sampleRate uint) string {
-	str := C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(sampleRate))
+func (m *Model) SpeechToText(buffer []int16, bufferSize uint) string {
+	str := C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize))
 	defer C.FreeString(str)
 	retval := C.GoString(str)
 	return retval
@@ -91,8 +85,8 @@ func (m *Metadata) NumItems() int32 {
 	return int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
 }
 
-func (m *Metadata) Probability() float64 {
-	return float64(C.Metadata_GetProbability((*C.Metadata)(unsafe.Pointer(m))))
+func (m *Metadata) Confidence() float64 {
+	return float64(C.Metadata_GetConfidence((*C.Metadata)(unsafe.Pointer(m))))
 }
 
 func (m *Metadata) Items() []MetadataItem {
@@ -110,9 +104,8 @@ func (m *Metadata) Close() error {
 // SpeechToTextWithMetadata uses the DeepSpeech model to perform Speech-To-Text.
 // buffer     A 16-bit, mono raw audio signal at the appropriate sample rate.
 // bufferSize The number of samples in the audio signal.
-// sampleRate The sample-rate of the audio signal.
-func (m *Model) SpeechToTextWithMetadata(buffer []int16, bufferSize, sampleRate uint) *Metadata {
-	return (*Metadata)(unsafe.Pointer(C.STTWithMetadata(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(sampleRate))))
+func (m *Model) SpeechToTextWithMetadata(buffer []int16, bufferSize uint) *Metadata {
+	return (*Metadata)(unsafe.Pointer(C.STTWithMetadata(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize))))
 }
 
 // Stream represent a streaming state
@@ -120,16 +113,12 @@ type Stream struct {
 	sw *C.StreamWrapper
 }
 
-// SetupStream creates a new audio stream
+// CreateStream creates a new audio stream
 //
 // mw               The DeepSpeech model to use
-// preAllocFrames   Number of timestep frames to reserve. One timestep
-//                  is equivalent to two window lengths (20ms). If set to
-//                  0 we reserve enough frames for 3 seconds of audio (150).
-// aSampleRate      The sample-rate of the audio signal.
-func SetupStream(mw *Model, preAllocFrames uint, sampleRate uint) *Stream {
+func CreateStream(mw *Model) *Stream {
 	return &Stream{
-		sw: C.SetupStream(mw.w, C.uint(preAllocFrames), C.uint(sampleRate)),
+		sw: C.CreateStream(mw.w),
 	}
 }
 
@@ -166,8 +155,8 @@ func (s *Stream) FinishStreamWithMetadata() *Metadata {
 // DiscardStream Destroy a streaming state without decoding the computed logits.
 // This can be used if you no longer need the result of an ongoing streaming
 // inference and don't want to perform a costly decode operation.
-func (s *Stream) DiscardStream() {
-	C.DiscardStream(s.sw)
+func (s *Stream) FreeStream() {
+	C.FreeStream(s.sw);
 }
 
 // PrintVersions Print version of this library and of the linked TensorFlow library.
