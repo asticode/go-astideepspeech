@@ -9,9 +9,9 @@ import "unsafe"
 
 // Model represents a DeepSpeech model
 type Model struct {
-	beamWidth          int
-	modelPath          string
-	w                  *C.ModelWrapper
+	beamWidth int
+	modelPath string
+	w         *C.ModelWrapper
 }
 
 // New creates a new Model
@@ -20,9 +20,9 @@ type Model struct {
 // beamWidth          The beam width used by the decoder. A larger beam width generates better results at the cost of decoding time.
 func New(modelPath string, beamWidth int) *Model {
 	return &Model{
-		beamWidth:          beamWidth,
-		modelPath:          modelPath,
-		w:                  C.New(C.CString(modelPath), C.int(beamWidth)),
+		beamWidth: beamWidth,
+		modelPath: modelPath,
+		w:         C.New(C.CString(modelPath), C.int(beamWidth)),
 	}
 }
 
@@ -156,7 +156,7 @@ func (s *Stream) FinishStreamWithMetadata() *Metadata {
 // This can be used if you no longer need the result of an ongoing streaming
 // inference and don't want to perform a costly decode operation.
 func (s *Stream) FreeStream() {
-	C.FreeStream(s.sw);
+	C.FreeStream(s.sw)
 }
 
 // PrintVersions Print version of this library and of the linked TensorFlow library.
