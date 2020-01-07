@@ -4,12 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/asticode/go-astideepspeech"
-	"github.com/asticode/go-astilog"
 	"github.com/cryptix/wav"
-	"github.com/pkg/errors"
 )
 
 // Constants
@@ -36,8 +35,7 @@ func metadataToString(m *astideepspeech.Metadata) string {
 
 func main() {
 	flag.Parse()
-
-	astilog.FlagInit()
+	log.SetFlags(0)
 
 	if *version {
 		astideepspeech.PrintVersions()
@@ -62,19 +60,19 @@ func main() {
 	// Stat audio
 	i, err := os.Stat(*audio)
 	if err != nil {
-		astilog.Fatal(errors.Wrapf(err, "stating %s failed", *audio))
+		log.Fatal(fmt.Errorf("stating %s failed: %w", *audio, err))
 	}
 
 	// Open audio
 	f, err := os.Open(*audio)
 	if err != nil {
-		astilog.Fatal(errors.Wrapf(err, "opening %s failed", audio))
+		log.Fatal(fmt.Errorf("opening %s failed: %w", *audio, err))
 	}
 
 	// Create reader
 	r, err := wav.NewReader(f, i.Size())
 	if err != nil {
-		astilog.Fatal(errors.Wrap(err, "creating new reader failed"))
+		log.Fatal(fmt.Errorf("creating new reader failed: %w", err))
 	}
 
 	// Read
@@ -85,7 +83,7 @@ func main() {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			astilog.Fatal(errors.Wrap(err, "reading sample failed"))
+			log.Fatal(fmt.Errorf("reading sample failed: %w", err))
 		}
 
 		// Append
@@ -102,5 +100,5 @@ func main() {
 		output = m.SpeechToText(d, uint(len(d)))
 	}
 
-	astilog.Infof("Text: %s", output)
+	log.Printf("Text: %s\n", output)
 }
