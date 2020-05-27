@@ -16,6 +16,10 @@ Golang bindings for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepSpeech
 - export CGO_CXXFLAGS="-I/tmp/deepspeech/include/"
 - export LD_LIBRARY_PATH=/tmp/deepspeech/lib/:$LD_LIBRARY_PATH
 
+Alternatively, copy the downloaded `libdeepspeech.so` and `deepspeech.h` files
+to directories that are searched by default, e.g. `/usr/local/lib` and
+`/usr/local/include`, respectively.
+
 ## Install astideepspeech
 
 Run the following command:

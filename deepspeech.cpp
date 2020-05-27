@@ -7,14 +7,18 @@ extern "C" {
             ModelState* model;
 
         public:
-            ModelWrapper(const char* aModelPath)
+            ModelWrapper(const char* aModelPath, int *errorOut)
             {
-                DS_CreateModel(aModelPath, &model);
+                model = nullptr;
+                *errorOut = DS_CreateModel(aModelPath, &model);
             }
 
             ~ModelWrapper()
             {
-                DS_FreeModel(model);
+                if (model) {
+                    DS_FreeModel(model);
+                    model = nullptr;
+                }
             }
 
             unsigned int getModelBeamWidth()
@@ -63,9 +67,9 @@ extern "C" {
             }
     };
 
-    ModelWrapper* New(const char* aModelPath)
+    ModelWrapper* New(const char* aModelPath, int* errorOut)
     {
-        return new ModelWrapper(aModelPath);
+        return new ModelWrapper(aModelPath, errorOut);
     }
     void Close(ModelWrapper* w)
     {
@@ -157,14 +161,18 @@ extern "C" {
             StreamingState* s;
 
         public:
-            StreamWrapper(ModelWrapper* w)
+            StreamWrapper(ModelWrapper* w, int* errorOut)
             {
-                DS_CreateStream(w->getModel(), &s);
+                s = nullptr;
+                *errorOut = DS_CreateStream(w->getModel(), &s);
             }
 
             ~StreamWrapper()
             {
-                DS_FreeStream(s);
+                if (s) {
+                    DS_FreeStream(s);
+                    s = nullptr;
+                }
             }
 
             void feedAudioContent(const short* aBuffer, unsigned int aBufferSize)
@@ -184,23 +192,30 @@ extern "C" {
 
             char* finishStream()
             {
-                return DS_FinishStream(s);
+                // DS_FinishStream frees the supplied state pointer.
+                char* res = DS_FinishStream(s);
+                s = nullptr;
+                return res;
             }
 
             Metadata* finishStreamWithMetadata(unsigned int aNumResults)
             {
-                return DS_FinishStreamWithMetadata(s, aNumResults);
+                // DS_FinishStreamWithMetadata frees the supplied state pointer.
+                Metadata* m = DS_FinishStreamWithMetadata(s, aNumResults);
+                s = nullptr;
+                return m;
             }
 
             void freeStream()
             {
                 DS_FreeStream(s);
+                s = nullptr;
             }
     };
 
-    StreamWrapper* CreateStream(ModelWrapper* mw, unsigned int aPreAllocFrames)
+    StreamWrapper* CreateStream(ModelWrapper* mw, int* errorOut)
     {
-        return new StreamWrapper(mw);
+        return new StreamWrapper(mw, errorOut);
     }
     void FreeStream(StreamWrapper* sw)
     {

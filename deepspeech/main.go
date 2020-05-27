@@ -23,9 +23,10 @@ const (
 var model = flag.String("model", "", "Path to the model (protocol buffer binary file)")
 var audio = flag.String("audio", "", "Path to the audio file to run (WAV format)")
 var scorer = flag.String("scorer", "", "Path to the external scorer")
-var version = flag.Bool("version", false, "Print version and exits")
+var version = flag.Bool("version", false, "Print version and exit")
 var extended = flag.Bool("extended", false, "Use extended metadata")
 var maxResults = flag.Uint("max-results", 5, "Maximum number of results when -extended is true")
+var printSampleRate = flag.Bool("sample-rate", false, "Print model sample rate and exit")
 
 func metadataToStrings(m *astideepspeech.Metadata) []string {
 	results := make([]string, 0, m.NumTranscripts())
@@ -45,7 +46,7 @@ func main() {
 	log.SetFlags(0)
 
 	if *version {
-		println(astideepspeech.Version())
+		fmt.Println(astideepspeech.Version())
 		return
 	}
 
@@ -58,8 +59,16 @@ func main() {
 	}
 
 	// Initialize DeepSpeech
-	m := astideepspeech.New(*model)
+	m, err := astideepspeech.New(*model)
+	if err != nil {
+		log.Fatal("Failed initializing model: ", err)
+	}
 	defer m.Close()
+
+	if *printSampleRate {
+		fmt.Println(m.GetModelSampleRate())
+		return
+	}
 
 	if err := m.SetModelBeamWidth(beamWidth); err != nil {
 		log.Fatal("Failed setting beam width: ", err)
@@ -109,14 +118,20 @@ func main() {
 	// Speech to text
 	var results []string
 	if *extended {
-		metadata := m.SpeechToTextWithMetadata(d, uint(len(d)), *maxResults)
+		metadata, err := m.SpeechToTextWithMetadata(d, *maxResults)
+		if err != nil {
+			log.Fatal("Failed converting speech to text: ", err)
+		}
 		defer metadata.Close()
 		results = metadataToStrings(metadata)
 	} else {
-		results = []string{m.SpeechToText(d, uint(len(d)))}
+		res, err := m.SpeechToText(d)
+		if err != nil {
+			log.Fatal("Failed converting speech to text: ", err)
+		}
+		results = []string{res}
 	}
 	for _, res := range results {
-		log.Println("Text: ", res)
+		fmt.Println("Text:", res)
 	}
-
 }
