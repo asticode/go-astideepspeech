@@ -5,46 +5,65 @@ package astideepspeech
 #include "deepspeech_wrap.h"
 */
 import "C"
-import "unsafe"
+import (
+	"errors"
+	"unsafe"
+)
 
-// Model represents a DeepSpeech model
+// Model provides an interface to a trained DeepSpeech model.
 type Model struct {
-	beamWidth int
 	modelPath string
 	w         *C.ModelWrapper
 }
 
-// New creates a new Model
-//
-// modelPath          The path to the frozen model graph.
-// beamWidth          The beam width used by the decoder. A larger beam width generates better results at the cost of decoding time.
-func New(modelPath string, beamWidth int) *Model {
+// New creates a new Model.
+// modelPath is the path to the frozen model graph.
+func New(modelPath string) *Model {
 	return &Model{
-		beamWidth: beamWidth,
 		modelPath: modelPath,
-		w:         C.New(C.CString(modelPath), C.int(beamWidth)),
+		w:         C.New(C.CString(modelPath)),
 	}
 }
 
-// Close closes the model properly
+// Close frees associated resources and destroys the model object.
 func (m *Model) Close() error {
 	C.Close(m.w)
 	return nil
 }
 
-// EnableDecoderWithLM enables decoding using beam scoring with a KenLM language model.
-//
-// lmPath 	        The path to the language model binary file.
-// triePath 	        The path to the trie file build from the same vocabulary as the language model binary.
-// lmWeight 	        The weight to give to language model results when scoring.
-// validWordCountWeight The weight (bonus) to give to beams when adding a new valid word to the decoding.
-func (m *Model) EnableDecoderWithLM(lmPath, triePath string, lmWeight, validWordCountWeight float64) {
-	C.EnableDecoderWithLM(m.w, C.CString(lmPath), C.CString(triePath), C.float(lmWeight), C.float(validWordCountWeight))
+// GetModelBeamWidth returns the beam width value used by the model.
+// If SetModelBeamWidth was not called before, will return the default
+// value loaded from the model file.
+func (m *Model) GetModelBeamWidth() uint {
+	return uint(C.GetModelBeamWidth(m.w))
 }
 
-// GetModelSampleRate read the sample rate that was used to produce the model file.
+// SetModelBeamWidth sets the beam width value used by the model.
+// A larger beam width value generates better results at the cost of decoding time.
+func (m *Model) SetModelBeamWidth(width uint) error {
+	return errorFromCode(C.SetModelBeamWidth(m.w, C.uint(width)))
+}
+
+// GetModelSampleRate returns the sample rate that was used to produce the model file.
 func (m *Model) GetModelSampleRate() int {
 	return int(C.GetModelSampleRate(m.w))
+}
+
+// EnableExternalScorer enables decoding using an external scorer.
+// scorerPath is the path to the external scorer file.
+func (m *Model) EnableExternalScorer(scorerPath string) error {
+	return errorFromCode(C.EnableExternalScorer(m.w, C.CString(scorerPath)))
+}
+
+// DisableExternalScorer disables decoding using an external scorer.
+func (m *Model) DisableExternalScorer() error {
+	return errorFromCode(C.DisableExternalScorer(m.w))
+}
+
+// SetScorerAlphaBeta sets hyperparameters alpha and beta of the external scorer.
+// alpha is the language model weight. beta is the word insertion weight.
+func (m *Model) SetScorerAlphaBeta(alpha, beta float32) error {
+	return errorFromCode(C.SetScorerAlphaBeta(m.w, C.float(alpha), C.float(beta)))
 }
 
 // sliceHeader represents a slice header
@@ -54,9 +73,9 @@ type sliceHeader struct {
 	Cap  int
 }
 
-// SpeechToText uses the DeepSpeech model to perform Speech-To-Text.
-// buffer     A 16-bit, mono raw audio signal at the appropriate sample rate.
-// bufferSize The number of samples in the audio signal.
+// SpeechToText uses the DeepSpeech model to convert speech to text.
+// buffer is 16-bit, mono raw audio signal at the appropriate sample rate (matching what the model was trained on).
+// bufferSize is the number of samples in the audio signal.
 func (m *Model) SpeechToText(buffer []int16, bufferSize uint) string {
 	str := C.STT(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize))
 	defer C.FreeString(str)
@@ -64,48 +83,71 @@ func (m *Model) SpeechToText(buffer []int16, bufferSize uint) string {
 	return retval
 }
 
-type MetadataItem C.struct_MetadataItem
+// TokenMetadata stores text of an individual token, along with its timing information.
+type TokenMetadata C.struct_TokenMetadata
 
-func (mi *MetadataItem) Character() string {
-	return C.GoString(C.MetadataItem_GetCharacter((*C.MetadataItem)(unsafe.Pointer(mi))))
+// Text returns the text corresponding to this token.
+func (tm *TokenMetadata) Text() string {
+	return C.GoString(C.TokenMetadata_GetText((*C.TokenMetadata)(unsafe.Pointer(tm))))
 }
 
-func (mi *MetadataItem) Timestep() int {
-	return int(C.MetadataItem_GetTimestep((*C.MetadataItem)(unsafe.Pointer(mi))))
+// Timestep returns the position of the token in units of 20ms.
+func (tm *TokenMetadata) Timestep() uint {
+	return uint(C.TokenMetadata_GetTimestep((*C.TokenMetadata)(unsafe.Pointer(tm))))
 }
 
-func (mi *MetadataItem) StartTime() float32 {
-	return float32(C.MetadataItem_GetStartTime((*C.MetadataItem)(unsafe.Pointer(mi))))
+// StartTime returns the position of the token in seconds.
+func (tm *TokenMetadata) StartTime() float32 {
+	return float32(C.TokenMetadata_GetStartTime((*C.TokenMetadata)(unsafe.Pointer(tm))))
 }
 
-// Metadata represents a DeepSpeech metadata output
+// CandidateTranscript is a single transcript computed by the model,
+// including a confidence value and the metadata for its constituent tokens.
+type CandidateTranscript C.struct_CandidateTranscript
+
+func (ct *CandidateTranscript) NumTokens() uint {
+	return uint(C.CandidateTranscript_GetNumTokens((*C.CandidateTranscript)(unsafe.Pointer(ct))))
+}
+
+func (ct *CandidateTranscript) Tokens() []TokenMetadata {
+	numTokens := uint(C.CandidateTranscript_GetNumTokens((*C.CandidateTranscript)(unsafe.Pointer(ct))))
+	allTokens := C.CandidateTranscript_GetTokens((*C.CandidateTranscript)(unsafe.Pointer(ct)))
+	return (*[1 << 30]TokenMetadata)(unsafe.Pointer(allTokens))[:numTokens:numTokens]
+}
+
+// Confidence returns the approximated confidence value for this transcript.
+// This is roughly the sum of the acoustic model logit values for each timestep/character that
+// contributed to the creation of this transcript.
+func (ct *CandidateTranscript) Confidence() float64 {
+	return float64(C.CandidateTranscript_GetConfidence((*C.CandidateTranscript)(unsafe.Pointer(ct))))
+}
+
+// Metadata holds an array of CandidateTranscript objects computed by the model.
 type Metadata C.struct_Metadata
 
-func (m *Metadata) NumItems() int32 {
-	return int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
+func (m *Metadata) NumTranscripts() uint {
+	return uint(C.Metadata_GetNumTranscripts((*C.Metadata)(unsafe.Pointer(m))))
 }
 
-func (m *Metadata) Confidence() float64 {
-	return float64(C.Metadata_GetConfidence((*C.Metadata)(unsafe.Pointer(m))))
+func (m *Metadata) Transcripts() []CandidateTranscript {
+	numTranscripts := int32(C.Metadata_GetNumTranscripts((*C.Metadata)(unsafe.Pointer(m))))
+	allTranscripts := C.Metadata_GetTranscripts((*C.Metadata)(unsafe.Pointer(m)))
+	return (*[1 << 30]CandidateTranscript)(unsafe.Pointer(allTranscripts))[:numTranscripts:numTranscripts]
 }
 
-func (m *Metadata) Items() []MetadataItem {
-	numItems := int32(C.Metadata_GetNumItems((*C.Metadata)(unsafe.Pointer(m))))
-	allItems := C.Metadata_GetItems((*C.Metadata)(unsafe.Pointer(m)))
-	return (*[1 << 30]MetadataItem)(unsafe.Pointer(allItems))[:numItems:numItems]
-}
-
-// Close frees the Metadata structure properly
+// Close frees the Metadata structure properly.
 func (m *Metadata) Close() error {
 	C.FreeMetadata((*C.Metadata)(unsafe.Pointer(m)))
 	return nil
 }
 
-// SpeechToTextWithMetadata uses the DeepSpeech model to perform Speech-To-Text.
-// buffer     A 16-bit, mono raw audio signal at the appropriate sample rate.
-// bufferSize The number of samples in the audio signal.
-func (m *Model) SpeechToTextWithMetadata(buffer []int16, bufferSize uint) *Metadata {
-	return (*Metadata)(unsafe.Pointer(C.STTWithMetadata(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize))))
+// SpeechToTextWithMetadata uses the DeepSpeech model to convert speech to text and
+// output results including metadata.
+// buffer is a 16-bit, mono raw audio signal at the appropriate sample rate (matching what the model was trained on).
+// bufferSize is the number of samples in the audio signal.
+// numResults is the maximum number of CandidateTranscript structs to return. Returned value might be smaller than this.
+func (m *Model) SpeechToTextWithMetadata(buffer []int16, bufferSize, numResults uint) *Metadata {
+	return (*Metadata)(unsafe.Pointer(C.STTWithMetadata(m.w, (*C.short)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&buffer)).Data)), C.uint(bufferSize), C.uint(numResults))))
 }
 
 // Stream represent a streaming state
@@ -137,6 +179,13 @@ func (s *Stream) IntermediateDecode() string {
 	return C.GoString(C.IntermediateDecode(s.sw))
 }
 
+// IntermediateDecodeWithMetadata computes the intermediate decoding of an
+// ongoing streaming inference, returning results including metadata.
+// numResults is the number of candidate transcripts to return.
+func (s *Stream) IntermediateDecodeWithMetadata(numResults uint) *Metadata {
+	return (*Metadata)(unsafe.Pointer(C.IntermediateDecodeWithMetadata(s.sw, C.uint(numResults))))
+}
+
 // FinishStream Signal the end of an audio signal to an ongoing streaming
 // inference, returns the STT result over the whole audio signal.
 func (s *Stream) FinishStream() string {
@@ -148,8 +197,8 @@ func (s *Stream) FinishStream() string {
 
 // FinishStreamWithMetadata Signal the end of an audio signal to an ongoing streaming
 // inference, returns extended metadata.
-func (s *Stream) FinishStreamWithMetadata() *Metadata {
-	return (*Metadata)(unsafe.Pointer(C.FinishStreamWithMetadata(s.sw)))
+func (s *Stream) FinishStreamWithMetadata(numResults uint) *Metadata {
+	return (*Metadata)(unsafe.Pointer(C.FinishStreamWithMetadata(s.sw, C.uint(numResults))))
 }
 
 // DiscardStream Destroy a streaming state without decoding the computed logits.
@@ -159,7 +208,21 @@ func (s *Stream) FreeStream() {
 	C.FreeStream(s.sw)
 }
 
-// PrintVersions Print version of this library and of the linked TensorFlow library.
-func PrintVersions() {
-	C.PrintVersions()
+// Version returns the version of the DeepSpeech C library.
+// The returned version is a semantic version (SemVer 2.0.0).
+func Version() string {
+	str := C.Version()
+	defer C.FreeString(str)
+	return C.GoString(str)
+}
+
+// errorFromCode converts an error code returned by DeepSpeech into a Go error.
+// Returns nil if code is equal to zero, indicating success.
+func errorFromCode(code C.int) error {
+	if code == 0 {
+		return nil
+	}
+	str := C.ErrorCodeToErrorMessage(code)
+	defer C.FreeString(str)
+	return errors.New(C.GoString(str))
 }

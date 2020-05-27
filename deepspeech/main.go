@@ -11,26 +11,33 @@ import (
 	"github.com/cryptix/wav"
 )
 
-// Constants
 const (
-	beamWidth            = 500
-	lmWeight             = 0.75
-	validWordCountWeight = 1.85
+	beamWidth = 500
+
+	// These are optimal hyperparameter values found with respect to the LibriSpeech
+	// clean dev corpus per https://github.com/mozilla/DeepSpeech/releases/tag/v0.7.1.
+	alpha = 0.931289039105002
+	beta  = 1.1834137581510284
 )
 
 var model = flag.String("model", "", "Path to the model (protocol buffer binary file)")
 var audio = flag.String("audio", "", "Path to the audio file to run (WAV format)")
-var lm = flag.String("lm", "", "Path to the language model binary file")
-var trie = flag.String("trie", "", "Path to the language model trie file created with native_client/generate_trie")
+var scorer = flag.String("scorer", "", "Path to the external scorer")
 var version = flag.Bool("version", false, "Print version and exits")
 var extended = flag.Bool("extended", false, "Use extended metadata")
+var maxResults = flag.Uint("max-results", 5, "Maximum number of results when -extended is true")
 
-func metadataToString(m *astideepspeech.Metadata) string {
-	retval := ""
-	for _, item := range m.Items() {
-		retval += item.Character()
+func metadataToStrings(m *astideepspeech.Metadata) []string {
+	results := make([]string, 0, m.NumTranscripts())
+	for _, tr := range m.Transcripts() {
+		var res string
+		for _, tok := range tr.Tokens() {
+			res += tok.Text()
+		}
+		res += fmt.Sprintf(" [%0.3f]", tr.Confidence())
+		results = append(results, res)
 	}
-	return retval
+	return results
 }
 
 func main() {
@@ -38,7 +45,7 @@ func main() {
 	log.SetFlags(0)
 
 	if *version {
-		astideepspeech.PrintVersions()
+		println(astideepspeech.Version())
 		return
 	}
 
@@ -51,10 +58,19 @@ func main() {
 	}
 
 	// Initialize DeepSpeech
-	m := astideepspeech.New(*model, beamWidth)
+	m := astideepspeech.New(*model)
 	defer m.Close()
-	if *lm != "" {
-		m.EnableDecoderWithLM(*lm, *trie, lmWeight, validWordCountWeight)
+
+	if err := m.SetModelBeamWidth(beamWidth); err != nil {
+		log.Fatal("Failed setting beam width: ", err)
+	}
+	if *scorer != "" {
+		if err := m.EnableExternalScorer(*scorer); err != nil {
+			log.Fatal("Failed enabling external scorer: ", err)
+		}
+		if err := m.SetScorerAlphaBeta(alpha, beta); err != nil {
+			log.Fatal("Failed setting scorer hyperparameters: ", err)
+		}
 	}
 
 	// Stat audio
@@ -90,15 +106,17 @@ func main() {
 		d = append(d, int16(s))
 	}
 
-	output := ""
 	// Speech to text
+	var results []string
 	if *extended {
-		metadata := m.SpeechToTextWithMetadata(d, uint(len(d)))
+		metadata := m.SpeechToTextWithMetadata(d, uint(len(d)), *maxResults)
 		defer metadata.Close()
-		output = metadataToString(metadata)
+		results = metadataToStrings(metadata)
 	} else {
-		output = m.SpeechToText(d, uint(len(d)))
+		results = []string{m.SpeechToText(d, uint(len(d)))}
+	}
+	for _, res := range results {
+		log.Println("Text: ", res)
 	}
 
-	log.Printf("Text: %s\n", output)
 }

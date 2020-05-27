@@ -1,45 +1,59 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    typedef struct MetadataItem {
-        char* character;
-        int timestep;
-        float start_time;
-    } MetadataItem;
+    typedef struct TokenMetadata {
+        const char* text;
+        const unsigned int timestep;
+        const float start_time;
+    } TokenMetadata;
+
+    typedef struct CandidateTranscript {
+        const TokenMetadata* const tokens;
+        const unsigned int num_tokens;
+        const double confidence;
+    } CandidateTranscript;
 
     typedef struct Metadata {
-        MetadataItem* items;
-        int num_items;
-        double confidence;
+        const CandidateTranscript* const transcripts;
+        const unsigned int num_transcripts;
     } Metadata;
 
     typedef void* ModelWrapper;
-    ModelWrapper* New(const char* aModelPath, int aBeamWidth);
+    ModelWrapper* New(const char* aModelPath);
     void Close(ModelWrapper* w);
-    void EnableDecoderWithLM(ModelWrapper* w, const char* aLMPath, const char* aTriePath, float aLMWeight, float aValidWordCountWeight);
+    unsigned int GetModelBeamWidth(ModelWrapper* w);
+    int SetModelBeamWidth(ModelWrapper* w, unsigned int aBeamWidth);
     int GetModelSampleRate(ModelWrapper* w);
+    int EnableExternalScorer(ModelWrapper* w, const char* aScorerPath);
+    int DisableExternalScorer(ModelWrapper* w);
+    int SetScorerAlphaBeta(ModelWrapper* w, float aAlpha, float aBeta);
     char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize);
-    Metadata* STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize);
+    Metadata* STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, unsigned int aNumResults);
 
     typedef void* StreamWrapper;
     StreamWrapper* CreateStream(ModelWrapper* w);
     void FreeStream(StreamWrapper* sw);
     void FeedAudioContent(StreamWrapper* sw, const short* aBuffer, unsigned int aBufferSize);
     char* IntermediateDecode(StreamWrapper* sw);
+    Metadata* IntermediateDecodeWithMetadata(StreamWrapper* sw, unsigned int aNumResults);
     char* FinishStream(StreamWrapper* sw);
-    Metadata* FinishStreamWithMetadata(StreamWrapper* sw);
+    Metadata* FinishStreamWithMetadata(StreamWrapper* sw, unsigned int aNumResults);
 
-    MetadataItem* Metadata_GetItems(Metadata* m);
-    double Metadata_GetConfidence(Metadata* m);
-    int Metadata_GetNumItems(Metadata* m);
+    const CandidateTranscript* Metadata_GetTranscripts(Metadata* m);
+    unsigned int Metadata_GetNumTranscripts(Metadata* m);
 
-    char* MetadataItem_GetCharacter(MetadataItem* mi);
-    int MetadataItem_GetTimestep(MetadataItem* mi);
-    float MetadataItem_GetStartTime(MetadataItem* mi);
+    const TokenMetadata* CandidateTranscript_GetTokens(CandidateTranscript* ct);
+    unsigned int CandidateTranscript_GetNumTokens(CandidateTranscript* ct);
+    double CandidateTranscript_GetConfidence(CandidateTranscript* ct);
+
+    const char* TokenMetadata_GetText(TokenMetadata* tm);
+    unsigned int TokenMetadata_GetTimestep(TokenMetadata* tm);
+    float TokenMetadata_GetStartTime(TokenMetadata* tm);
 
     void FreeString(char* s);
     void FreeMetadata(Metadata* m);
-    void PrintVersions();
+    char* Version();
+    char* ErrorCodeToErrorMessage(int aErrorCode);
 
 #ifdef __cplusplus
 }
