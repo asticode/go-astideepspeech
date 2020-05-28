@@ -19,7 +19,7 @@ extern "C" {
     } Metadata;
 
     typedef void* ModelWrapper;
-    ModelWrapper* New(const char* aModelPath);
+    ModelWrapper* New(const char* aModelPath, int* errorOut);
     void Close(ModelWrapper* w);
     unsigned int GetModelBeamWidth(ModelWrapper* w);
     int SetModelBeamWidth(ModelWrapper* w, unsigned int aBeamWidth);
@@ -31,7 +31,7 @@ extern "C" {
     Metadata* STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, unsigned int aNumResults);
 
     typedef void* StreamWrapper;
-    StreamWrapper* CreateStream(ModelWrapper* w);
+    StreamWrapper* CreateStream(ModelWrapper* w, int* errorOut);
     void FreeStream(StreamWrapper* sw);
     void FeedAudioContent(StreamWrapper* sw, const short* aBuffer, unsigned int aBufferSize);
     char* IntermediateDecode(StreamWrapper* sw);
