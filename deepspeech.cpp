@@ -21,17 +21,17 @@ extern "C" {
                 }
             }
 
-            unsigned int getModelBeamWidth()
+            unsigned int beamWidth()
             {
                 return DS_GetModelBeamWidth(model);
             }
 
-            int setModelBeamWidth(unsigned int aBeamWidth)
+            int setBeamWidth(unsigned int aBeamWidth)
             {
                 return DS_SetModelBeamWidth(model, aBeamWidth);
             }
 
-            int getModelSampleRate()
+            int sampleRate()
             {
                 return DS_GetModelSampleRate(model);
             }
@@ -69,89 +69,99 @@ extern "C" {
 
     ModelWrapper* New(const char* aModelPath, int* errorOut)
     {
-        return new ModelWrapper(aModelPath, errorOut);
+        auto mw = new ModelWrapper(aModelPath, errorOut);
+        if (*errorOut != DS_ERR_OK) {
+            delete mw;
+            mw = nullptr;
+        }
+        return mw;
     }
-    void Close(ModelWrapper* w)
+    void Model_Close(ModelWrapper* w)
     {
         delete w;
     }
 
-    unsigned int GetModelBeamWidth(ModelWrapper* w)
+    unsigned int Model_BeamWidth(ModelWrapper* w)
     {
-        return w->getModelBeamWidth();
+        return w->beamWidth();
     }
 
-    int SetModelBeamWidth(ModelWrapper* w, unsigned int aBeamWidth)
+    int Model_SetBeamWidth(ModelWrapper* w, unsigned int aBeamWidth)
     {
-        return w->setModelBeamWidth(aBeamWidth);
+        return w->setBeamWidth(aBeamWidth);
     }
 
-    int GetModelSampleRate(ModelWrapper* w)
+    int Model_SampleRate(ModelWrapper* w)
     {
-        return w->getModelSampleRate();
+        return w->sampleRate();
     }
 
-    int EnableExternalScorer(ModelWrapper* w, const char* aScorerPath)
+    int Model_EnableExternalScorer(ModelWrapper* w, const char* aScorerPath)
     {
         return w->enableExternalScorer(aScorerPath);
     }
 
-    int DisableExternalScorer(ModelWrapper* w)
+    int Model_DisableExternalScorer(ModelWrapper* w)
     {
         return w->disableExternalScorer();
     }
 
-    int SetScorerAlphaBeta(ModelWrapper* w, float aAlpha, float aBeta)
+    int Model_SetScorerAlphaBeta(ModelWrapper* w, float aAlpha, float aBeta)
     {
         return w->setScorerAlphaBeta(aAlpha, aBeta);
     }
 
-    char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize)
+    char* Model_STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize)
     {
         return w->stt(aBuffer, aBufferSize);
     }
 
-    Metadata* STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, unsigned int aNumResults)
+    Metadata* Model_STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, unsigned int aNumResults)
     {
         return w->sttWithMetadata(aBuffer, aBufferSize, aNumResults);
     }
 
-    const CandidateTranscript* Metadata_GetTranscripts(Metadata* m)
+    const CandidateTranscript* Metadata_Transcripts(Metadata* m)
     {
         return m->transcripts;
     }
 
-    unsigned int Metadata_GetNumTranscripts(Metadata* m)
+    unsigned int Metadata_NumTranscripts(Metadata* m)
     {
         return m->num_transcripts;
     }
 
-    const TokenMetadata* CandidateTranscript_GetTokens(CandidateTranscript* ct)
+    void Metadata_Close(Metadata* m)
+    {
+        DS_FreeMetadata(m);
+    }
+
+    const TokenMetadata* CandidateTranscript_Tokens(CandidateTranscript* ct)
     {
         return ct->tokens;
     }
 
-    int CandidateTranscript_GetNumTokens(CandidateTranscript* ct)
+    int CandidateTranscript_NumTokens(CandidateTranscript* ct)
     {
         return ct->num_tokens;
     }
 
-    double CandidateTranscript_GetConfidence(CandidateTranscript* ct)
+    double CandidateTranscript_Confidence(CandidateTranscript* ct)
     {
         return ct->confidence;
     }
 
-    const char* TokenMetadata_GetText(TokenMetadata* tm)
+    const char* TokenMetadata_Text(TokenMetadata* tm)
     {
         return tm->text;
     }
 
-    unsigned int TokenMetadata_GetTimestep(TokenMetadata* tm)
+    unsigned int TokenMetadata_Timestep(TokenMetadata* tm)
     {
         return tm->timestep;
     }
 
-    float TokenMetadata_GetStartTime(TokenMetadata* tm)
+    float TokenMetadata_StartTime(TokenMetadata* tm)
     {
         return tm->start_time;
     }
@@ -190,7 +200,7 @@ extern "C" {
                 return DS_IntermediateDecodeWithMetadata(s, aNumResults);
             }
 
-            char* finishStream()
+            char* finish()
             {
                 // DS_FinishStream frees the supplied state pointer.
                 char* res = DS_FinishStream(s);
@@ -198,7 +208,7 @@ extern "C" {
                 return res;
             }
 
-            Metadata* finishStreamWithMetadata(unsigned int aNumResults)
+            Metadata* finishWithMetadata(unsigned int aNumResults)
             {
                 // DS_FinishStreamWithMetadata frees the supplied state pointer.
                 Metadata* m = DS_FinishStreamWithMetadata(s, aNumResults);
@@ -206,55 +216,60 @@ extern "C" {
                 return m;
             }
 
-            void freeStream()
+            void discard()
             {
                 DS_FreeStream(s);
                 s = nullptr;
             }
     };
 
-    StreamWrapper* CreateStream(ModelWrapper* mw, int* errorOut)
+    StreamWrapper* Model_NewStream(ModelWrapper* mw, int* errorOut)
     {
-        return new StreamWrapper(mw, errorOut);
+        auto sw = new StreamWrapper(mw, errorOut);
+        if (*errorOut != DS_ERR_OK) {
+            delete sw;
+            sw = nullptr;
+        }
+        return sw;
     }
-    void FreeStream(StreamWrapper* sw)
+    void Stream_Discard(StreamWrapper* sw)
     {
+        sw->discard();
         delete sw;
     }
 
-    void FeedAudioContent(StreamWrapper* sw, const short* aBuffer, unsigned int aBufferSize)
+    void Stream_FeedAudioContent(StreamWrapper* sw, const short* aBuffer, unsigned int aBufferSize)
     {
         sw->feedAudioContent(aBuffer, aBufferSize);
     }
 
-    char* IntermediateDecode(StreamWrapper* sw)
+    char* Stream_IntermediateDecode(StreamWrapper* sw)
     {
         return sw->intermediateDecode();
     }
 
-    Metadata* IntermediateDecodeWithMetadata(StreamWrapper* sw, unsigned int aNumResults)
+    Metadata* Stream_IntermediateDecodeWithMetadata(StreamWrapper* sw, unsigned int aNumResults)
     {
         return sw->intermediateDecodeWithMetadata(aNumResults);
     }
 
-    char* FinishStream(StreamWrapper* sw)
+    char* Stream_Finish(StreamWrapper* sw)
     {
-        return sw->finishStream();
+        char* str = sw->finish();
+        delete sw;
+        return str;
     }
 
-    Metadata* FinishStreamWithMetadata(StreamWrapper* sw, unsigned int aNumResults)
+    Metadata* Stream_FinishWithMetadata(StreamWrapper* sw, unsigned int aNumResults)
     {
-        return sw->finishStreamWithMetadata(aNumResults);
+        Metadata* m = sw->finishWithMetadata(aNumResults);
+        delete sw;
+        return m;
     }
 
     void FreeString(char* s)
     {
         DS_FreeString(s);
-    }
-
-    void FreeMetadata(Metadata* m)
-    {
-        DS_FreeMetadata(m);
     }
 
     char* Version()

@@ -20,38 +20,38 @@ extern "C" {
 
     typedef void* ModelWrapper;
     ModelWrapper* New(const char* aModelPath, int* errorOut);
-    void Close(ModelWrapper* w);
-    unsigned int GetModelBeamWidth(ModelWrapper* w);
-    int SetModelBeamWidth(ModelWrapper* w, unsigned int aBeamWidth);
-    int GetModelSampleRate(ModelWrapper* w);
-    int EnableExternalScorer(ModelWrapper* w, const char* aScorerPath);
-    int DisableExternalScorer(ModelWrapper* w);
-    int SetScorerAlphaBeta(ModelWrapper* w, float aAlpha, float aBeta);
-    char* STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize);
-    Metadata* STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, unsigned int aNumResults);
+    void Model_Close(ModelWrapper* w);
+    unsigned int Model_BeamWidth(ModelWrapper* w);
+    int Model_SetBeamWidth(ModelWrapper* w, unsigned int aBeamWidth);
+    int Model_SampleRate(ModelWrapper* w);
+    int Model_EnableExternalScorer(ModelWrapper* w, const char* aScorerPath);
+    int Model_DisableExternalScorer(ModelWrapper* w);
+    int Model_SetScorerAlphaBeta(ModelWrapper* w, float aAlpha, float aBeta);
+    char* Model_STT(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize);
+    Metadata* Model_STTWithMetadata(ModelWrapper* w, const short* aBuffer, unsigned int aBufferSize, unsigned int aNumResults);
 
     typedef void* StreamWrapper;
-    StreamWrapper* CreateStream(ModelWrapper* w, int* errorOut);
-    void FreeStream(StreamWrapper* sw);
-    void FeedAudioContent(StreamWrapper* sw, const short* aBuffer, unsigned int aBufferSize);
-    char* IntermediateDecode(StreamWrapper* sw);
-    Metadata* IntermediateDecodeWithMetadata(StreamWrapper* sw, unsigned int aNumResults);
-    char* FinishStream(StreamWrapper* sw);
-    Metadata* FinishStreamWithMetadata(StreamWrapper* sw, unsigned int aNumResults);
+    StreamWrapper* Model_NewStream(ModelWrapper* w, int* errorOut);
+    void Stream_Discard(StreamWrapper* sw);
+    void Stream_FeedAudioContent(StreamWrapper* sw, const short* aBuffer, unsigned int aBufferSize);
+    char* Stream_IntermediateDecode(StreamWrapper* sw);
+    Metadata* Stream_IntermediateDecodeWithMetadata(StreamWrapper* sw, unsigned int aNumResults);
+    char* Stream_Finish(StreamWrapper* sw);
+    Metadata* Stream_FinishWithMetadata(StreamWrapper* sw, unsigned int aNumResults);
 
-    const CandidateTranscript* Metadata_GetTranscripts(Metadata* m);
-    unsigned int Metadata_GetNumTranscripts(Metadata* m);
+    const CandidateTranscript* Metadata_Transcripts(Metadata* m);
+    unsigned int Metadata_NumTranscripts(Metadata* m);
+    void Metadata_Close(Metadata* m);
 
-    const TokenMetadata* CandidateTranscript_GetTokens(CandidateTranscript* ct);
-    unsigned int CandidateTranscript_GetNumTokens(CandidateTranscript* ct);
-    double CandidateTranscript_GetConfidence(CandidateTranscript* ct);
+    const TokenMetadata* CandidateTranscript_Tokens(CandidateTranscript* ct);
+    unsigned int CandidateTranscript_NumTokens(CandidateTranscript* ct);
+    double CandidateTranscript_Confidence(CandidateTranscript* ct);
 
-    const char* TokenMetadata_GetText(TokenMetadata* tm);
-    unsigned int TokenMetadata_GetTimestep(TokenMetadata* tm);
-    float TokenMetadata_GetStartTime(TokenMetadata* tm);
+    const char* TokenMetadata_Text(TokenMetadata* tm);
+    unsigned int TokenMetadata_Timestep(TokenMetadata* tm);
+    float TokenMetadata_StartTime(TokenMetadata* tm);
 
     void FreeString(char* s);
-    void FreeMetadata(Metadata* m);
     char* Version();
     char* ErrorCodeToErrorMessage(int aErrorCode);
 

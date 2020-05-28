@@ -66,11 +66,11 @@ func main() {
 	defer m.Close()
 
 	if *printSampleRate {
-		fmt.Println(m.GetModelSampleRate())
+		fmt.Println(m.SampleRate())
 		return
 	}
 
-	if err := m.SetModelBeamWidth(beamWidth); err != nil {
+	if err := m.SetBeamWidth(beamWidth); err != nil {
 		log.Fatal("Failed setting beam width: ", err)
 	}
 	if *scorer != "" {
