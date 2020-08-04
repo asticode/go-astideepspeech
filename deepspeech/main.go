@@ -11,15 +11,6 @@ import (
 	"github.com/cryptix/wav"
 )
 
-const (
-	beamWidth = 500
-
-	// These are optimal hyperparameter values found with respect to the LibriSpeech
-	// clean dev corpus per https://github.com/mozilla/DeepSpeech/releases/tag/v0.7.1.
-	alpha = 0.931289039105002
-	beta  = 1.1834137581510284
-)
-
 var model = flag.String("model", "", "Path to the model (protocol buffer binary file)")
 var audio = flag.String("audio", "", "Path to the audio file to run (WAV format)")
 var scorer = flag.String("scorer", "", "Path to the external scorer")
@@ -68,18 +59,6 @@ func main() {
 	if *printSampleRate {
 		fmt.Println(m.SampleRate())
 		return
-	}
-
-	if err := m.SetBeamWidth(beamWidth); err != nil {
-		log.Fatal("Failed setting beam width: ", err)
-	}
-	if *scorer != "" {
-		if err := m.EnableExternalScorer(*scorer); err != nil {
-			log.Fatal("Failed enabling external scorer: ", err)
-		}
-		if err := m.SetScorerAlphaBeta(alpha, beta); err != nil {
-			log.Fatal("Failed setting scorer hyperparameters: ", err)
-		}
 	}
 
 	// Stat audio
