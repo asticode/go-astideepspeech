@@ -61,6 +61,12 @@ func main() {
 		return
 	}
 
+	if *scorer != "" {
+		if err := m.EnableExternalScorer(*scorer); err != nil {
+			log.Fatal("Failed enabling external scorer: ", err)
+		}
+	}
+
 	// Stat audio
 	i, err := os.Stat(*audio)
 	if err != nil {
