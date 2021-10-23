@@ -3,7 +3,7 @@ package astideepspeech
 
 /*
 #cgo CXXFLAGS: -std=c++11
-#cgo LDFLAGS: -ldeepspeech
+#cgo LDFLAGS: -lstt
 #include "deepspeech_wrap.h"
 #include "stdlib.h"
 */

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <deepspeech.h>
+#include <coqui-stt.h>
 
 extern "C" {
     class ModelWrapper {
