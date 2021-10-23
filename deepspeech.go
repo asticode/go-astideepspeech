@@ -197,7 +197,7 @@ func (s *Stream) FeedAudioContent(buffer []int16) {
 // currently capable of streaming, so it always starts from the beginning
 // of the audio.
 func (s *Stream) IntermediateDecode() (string, error) {
-	// DS_IntermediateDecode isn't documented as returning null, but future-proofing this seems safer.
+	// STT_IntermediateDecode isn't documented as returning null, but future-proofing this seems safer.
 	str := C.Stream_IntermediateDecode(s.sw)
 	if str == nil {
 		return "", errors.New("decoding failed")
@@ -221,7 +221,7 @@ func (s *Stream) IntermediateDecodeWithMetadata(numResults uint) (*Metadata, err
 // Finish computes the final decoding of an ongoing streaming inference and returns the result.
 // This signals the end of an ongoing streaming inference.
 func (s *Stream) Finish() (string, error) {
-	// DS_FinishStream isn't documented as returning null, but future-proofing this seems safer.
+	// STT_FinishStream isn't documented as returning null, but future-proofing this seems safer.
 	str := C.Stream_Finish(s.sw) // deletes s.sw
 	s.sw = nil
 
