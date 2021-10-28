@@ -1,6 +1,12 @@
 [![GoReportCard](http://goreportcard.com/badge/github.com/asticode/go-astideepspeech)](http://goreportcard.com/report/github.com/asticode/go-astideepspeech)
 [![GoDoc](https://godoc.org/github.com/asticode/go-astideepspeech?status.svg)](https://godoc.org/github.com/asticode/go-astideepspeech)
 
+# Warning
+
+[DeepSpeech](https://github.com/mozilla/DeepSpeech) doesn't seem to be maintained anymore by Mozilla. [Coqui](https://github.com/coqui-ai) is one of the projects that continued building on top of this awesome project. Check out the GO bindings for Coqui [here](https://github.com/asticode/go-asticoqui).
+
+# Astideepspeech
+
 Golang bindings for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepSpeech) speech-to-text library.
 
 `astideepspeech` is compatible with version `v0.9.0` of `DeepSpeech`.
